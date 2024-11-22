@@ -509,6 +509,12 @@ class ResNet18Conv(ConvBase):
         super(ResNet18Conv, self).__init__()
         net = vision_models.resnet18(pretrained=pretrained)
 
+        # ptr = vision_models.resnet18(weights=vision_models.ResNet18_Weights.IMAGENET1K_V1)
+        # for p1, p2 in zip(net.parameters(), ptr.parameters()):
+        #     if p1.data.ne(p2.data).sum() > 0:
+        #         print('False')
+        # print('IMAGENET PRETRAINING')
+
         if input_coord_conv:
             net.conv1 = CoordConv2d(input_channel, 64, kernel_size=7, stride=2, padding=3, bias=False)
         elif input_channel != 3:

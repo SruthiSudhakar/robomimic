@@ -7,10 +7,10 @@ import numpy as np
 import json
 
 import pybullet as p
-import gibson2
-from gibson2.envs.semantic_organize_and_fetch import SemanticOrganizeAndFetch
-from gibson2.utils.custom_utils import ObjectConfig
-import gibson2.external.pybullet_tools.utils as PBU
+import igibson
+# from igibson.envs.semantic_organize_and_fetch import SemanticOrganizeAndFetch
+# from igibson.utils.custom_utils import ObjectConfig
+from igibson.external.pybullet_tools.utils import WorldSaver
 import tempfile
 import os
 import yaml
@@ -20,10 +20,10 @@ import robomimic.utils.obs_utils as ObsUtils
 import robomimic.envs.env_base as EB
 
 
-# TODO: Once iG 2.0 is more stable, automate available environments, similar to robosuite
-ENV_MAPPING = {
-    "SemanticOrganizeAndFetch": SemanticOrganizeAndFetch,
-}
+# # TODO: Once iG 2.0 is more stable, automate available environments, similar to robosuite
+# ENV_MAPPING = {
+#     "SemanticOrganizeAndFetch": SemanticOrganizeAndFetch,
+# }
 
 
 class EnvGibsonMOMART(EB.EnvBase):
@@ -296,7 +296,7 @@ class EnvGibsonMOMART(EB.EnvBase):
 
     def get_state(self):
         """Get iG flattened state"""
-        return {"states": PBU.WorldSaver(exclude_body_ids=self.exclude_body_ids).serialize()}
+        return {"states": WorldSaver(exclude_body_ids=self.exclude_body_ids).serialize()}
 
     def get_reward(self):
         return self.env.task.get_reward(self.env)[0]
