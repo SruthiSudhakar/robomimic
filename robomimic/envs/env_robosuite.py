@@ -9,14 +9,21 @@ from copy import deepcopy
 
 import robosuite
 import robosuite.utils.transform_utils as T
+from termcolor import colored
 try:
     # this is needed for ensuring robosuite can find the additional mimicgen environments (see https://mimicgen.github.io)
     import mimicgen_envs
 except ImportError:
+    print(colored('COULD NOT IMPORT MIMICGEN-ENVS','red'))
     pass
-
+try:
+    import robocasa
+except ImportError:
+    print(colored('COULD NOT IMPORT ROBOCASA','red'))
+import pdb
 import robomimic.utils.obs_utils as ObsUtils
 import robomimic.envs.env_base as EB
+from termcolor import colored
 
 # protect against missing mujoco-py module, since robosuite might be using mujoco-py or DM backend
 try:
@@ -147,7 +154,21 @@ class EnvRobosuite(EB.EnvBase):
         """
         should_ret = False
         if "model" in state:
-            self.reset()
+            if state.get("ep_meta", None) is not None:
+                # set relevant episode information
+                ep_meta = json.loads(state["ep_meta"])
+            else:
+                ep_meta = {}
+            if hasattr(self.env, "set_attrs_from_ep_meta"):  # older versions had this function
+                self.env.set_attrs_from_ep_meta(ep_meta)
+            elif hasattr(self.env, "set_ep_meta"):  # newer versions
+                self.env.set_ep_meta(ep_meta)
+
+            # this reset is necessary.
+            # while the call to env.reset_from_xml_string does call reset,
+            # that is only a "soft" reset that doesn't actually reload the model.
+            self.env.reset()
+
             robosuite_version_id = int(robosuite.__version__.split(".")[1])
             if robosuite_version_id <= 3:
                 from robosuite.utils.mjcf_utils import postprocess_model_xml
@@ -157,14 +178,21 @@ class EnvRobosuite(EB.EnvBase):
                 xml = self.env.edit_model_xml(state["model"])
             self.env.reset_from_xml_string(xml)
             self.env.sim.reset()
-            if not self._is_v1:
-                # hide teleop visualization after restoring from model
-                self.env.sim.model.site_rgba[self.env.eef_site_id] = np.array([0., 0., 0., 0.])
-                self.env.sim.model.site_rgba[self.env.eef_cylinder_id] = np.array([0., 0., 0., 0.])
+            # if not self._is_v1:
+            #     # hide teleop visualization after restoring from model
+            #     self.env.sim.model.site_rgba[self.env.eef_site_id] = np.array([0., 0., 0., 0.])
+            #     self.env.sim.model.site_rgba[self.env.eef_cylinder_id] = np.array([0., 0., 0., 0.])
         if "states" in state:
             self.env.sim.set_state_from_flattened(state["states"])
             self.env.sim.forward()
             should_ret = True
+        # # update state as needed
+        # if hasattr(self.env, "update_sites"):
+        #     # older versions of environment had update_sites function
+        #     self.env.update_sites()
+        # if hasattr(self.env, "update_state"):
+        #     # later versions renamed this to update_state
+        #     self.env.update_state()
 
         if "goal" in state:
             self.set_goal(**state["goal"])
