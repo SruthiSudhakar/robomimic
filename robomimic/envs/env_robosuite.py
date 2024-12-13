@@ -178,21 +178,21 @@ class EnvRobosuite(EB.EnvBase):
                 xml = self.env.edit_model_xml(state["model"])
             self.env.reset_from_xml_string(xml)
             self.env.sim.reset()
-            # if not self._is_v1:
-            #     # hide teleop visualization after restoring from model
-            #     self.env.sim.model.site_rgba[self.env.eef_site_id] = np.array([0., 0., 0., 0.])
-            #     self.env.sim.model.site_rgba[self.env.eef_cylinder_id] = np.array([0., 0., 0., 0.])
+            if not self._is_v1:
+                # hide teleop visualization after restoring from model
+                self.env.sim.model.site_rgba[self.env.eef_site_id] = np.array([0., 0., 0., 0.])
+                self.env.sim.model.site_rgba[self.env.eef_cylinder_id] = np.array([0., 0., 0., 0.])
         if "states" in state:
             self.env.sim.set_state_from_flattened(state["states"])
             self.env.sim.forward()
             should_ret = True
         # # update state as needed
-        # if hasattr(self.env, "update_sites"):
-        #     # older versions of environment had update_sites function
-        #     self.env.update_sites()
-        # if hasattr(self.env, "update_state"):
-        #     # later versions renamed this to update_state
-        #     self.env.update_state()
+        if hasattr(self.env, "update_sites"):
+            # older versions of environment had update_sites function
+            self.env.update_sites()
+        if hasattr(self.env, "update_state"):
+            # later versions renamed this to update_state
+            self.env.update_state()
 
         if "goal" in state:
             self.set_goal(**state["goal"])
