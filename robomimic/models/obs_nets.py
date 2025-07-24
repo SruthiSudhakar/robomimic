@@ -21,11 +21,12 @@ import torch.distributions as D
 from robomimic.utils.python_utils import extract_class_init_kwargs_from_dict
 import robomimic.utils.tensor_utils as TensorUtils
 import robomimic.utils.obs_utils as ObsUtils
-from robomimic.models.base_nets import Module, Sequential, MLP, RNN_Base, ResNet18Conv, SpatialSoftmax, \
+from robomimic.models.base_nets import Module, Sequential, MLP, RNN_Base, ResNet18Conv, ResNet18ConvFiLM, SpatialSoftmax, \
     FeatureAggregator
-from robomimic.models.obs_core import VisualCore, Randomizer
+from robomimic.models.obs_core import VisualCore, VisualCoreLanguageConditioned, Randomizer
 from robomimic.models.transformers import PositionalEncoding, GPT_Backbone
-
+import pdb
+from robomimic.macros import LANG_EMB_KEY
 
 def obs_encoder_factory(
         obs_shapes,
@@ -232,15 +233,20 @@ class ObservationEncoder(Module):
                 x = self.obs_randomizers[k].forward_in(x)
             # maybe process with obs net
             if self.obs_nets[k] is not None:
-                x = self.obs_nets[k](x)
+                if isinstance(self.obs_nets[k], VisualCoreLanguageConditioned):
+                    x = self.obs_nets[k](x, lang_emb=obs_dict[LANG_EMB_KEY])
+                else:
+                    x = self.obs_nets[k](x)
                 if self.activation is not None:
                     x = self.activation(x)
             # maybe process encoder output with randomizer
             if self.obs_randomizers[k] is not None:
                 x = self.obs_randomizers[k].forward_out(x)
             # flatten to [B, D]
-            x = TensorUtils.flatten(x, begin_axis=1)
-            feats.append(x)
+            #TODO: CHECK THIS LOGIC! SHUOLD I HAVE UNCOMMENTED THAT SECOND PART IN THE NEXT LINE?
+            if k != LANG_EMB_KEY:# or not isinstance(self.obs_nets[k], VisualCoreLanguageConditioned):
+                x = TensorUtils.flatten(x, begin_axis=1)
+                feats.append(x)
 
         # concatenate all features together
         return torch.cat(feats, dim=-1)
@@ -258,7 +264,9 @@ class ObservationEncoder(Module):
                 feat_shape = self.obs_nets[k].output_shape(feat_shape)
             if self.obs_randomizers[k] is not None:
                 feat_shape = self.obs_randomizers[k].output_shape_out(feat_shape)
-            feat_dim += int(np.prod(feat_shape))
+            #TODO: CHECK THIS LOGIC! SHUOLD I HAVE UNCOMMENTED THAT SECOND PART IN THE NEXT LINE?
+            if k != LANG_EMB_KEY:# or not isinstance(self.obs_nets[k], VisualCoreLanguageConditioned):
+                feat_dim += int(np.prod(feat_shape))
         return [feat_dim]
 
     def __repr__(self):

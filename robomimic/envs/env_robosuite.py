@@ -10,6 +10,7 @@ from copy import deepcopy
 import robosuite
 import robosuite.utils.transform_utils as T
 from termcolor import colored
+import pdb
 try:
     # this is needed for ensuring robosuite can find the additional mimicgen environments (see https://mimicgen.github.io)
     import mimicgen_envs
@@ -19,8 +20,8 @@ except ImportError:
 try:
     import robocasa
 except ImportError:
+    pdb.set_trace()
     print(colored('COULD NOT IMPORT ROBOCASA','red'))
-import pdb
 import robomimic.utils.obs_utils as ObsUtils
 import robomimic.envs.env_base as EB
 from termcolor import colored
@@ -182,6 +183,27 @@ class EnvRobosuite(EB.EnvBase):
                 # hide teleop visualization after restoring from model
                 self.env.sim.model.site_rgba[self.env.eef_site_id] = np.array([0., 0., 0., 0.])
                 self.env.sim.model.site_rgba[self.env.eef_cylinder_id] = np.array([0., 0., 0., 0.])
+        # elif "ep_meta" in state:
+        #     # print(colored('using JUST the ep meta to reset','green'))
+        #     if state.get("ep_meta", None) is not None:
+        #         # set relevant episode information
+        #         ep_meta = json.loads(state["ep_meta"])
+        #     else:
+        #         ep_meta = {}
+        #     if hasattr(self.env, "set_attrs_from_ep_meta"):  # older versions had this function
+        #         self.env.set_attrs_from_ep_meta(ep_meta)
+        #     elif hasattr(self.env, "set_ep_meta"):  # newer versions
+        #         self.env.set_ep_meta(ep_meta)
+
+        #     # this reset is necessary.
+        #     # while the call to env.reset_from_xml_string does call reset,
+        #     # that is only a "soft" reset that doesn't actually reload the model.
+        #     self.env.reset()
+        #     self.env.sim.reset()
+        #     if not self._is_v1:
+        #         # hide teleop visualization after restoring from model
+        #         self.env.sim.model.site_rgba[self.env.eef_site_id] = np.array([0., 0., 0., 0.])
+        #         self.env.sim.model.site_rgba[self.env.eef_cylinder_id] = np.array([0., 0., 0., 0.])
         if "states" in state:
             self.env.sim.set_state_from_flattened(state["states"])
             self.env.sim.forward()

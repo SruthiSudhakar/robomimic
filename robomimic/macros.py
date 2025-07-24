@@ -15,6 +15,8 @@ WANDB_ENTITY = None
 # alternatively, set up wandb from terminal with `wandb login`
 WANDB_API_KEY = None
 
+LANG_EMB_KEY='language_goal'
+
 try:
     from robomimic.macros_private import *
 except ImportError:
